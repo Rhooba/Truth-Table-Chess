@@ -32,4 +32,4 @@ script.js
 Educational Value
 The game successfully bridges the gap between theoretical discrete math concepts and practical application, making truth table practice engaging through gamification while maintaining academic rigor.
 
-Developed by Cascade AI Assistant for discrete mathematics education
+Developed with help by Claude AI Assistant for discrete mathematics education
