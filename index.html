@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Truth Table Checkers</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="game-container">
+        <header>
+            <h1>Truth Table Checkers</h1>
+            <div class="score-board">
+                <div class="player-score">
+                    <span>Player: </span>
+                    <span id="player-score">0</span>
+                </div>
+                <div class="ai-score">
+                    <span>AI: </span>
+                    <span id="ai-score">0</span>
+                </div>
+            </div>
+        </header>
+
+        <main class="game-area">
+            <div class="board-container">
+                <div id="checkers-board" class="board"></div>
+            </div>
+            
+            <div class="challenge-panel">
+                <div id="challenge-container" class="challenge-box hidden">
+                    <h3>Truth Table Challenge</h3>
+                    <div id="challenge-question"></div>
+                    <div id="challenge-options"></div>
+                    <div class="challenge-controls">
+                        <button id="submit-answer" class="btn primary">Submit</button>
+                        <button id="skip-challenge" class="btn secondary">Skip (-1 point)</button>
+                    </div>
+                    <div id="timer" class="timer">30</div>
+                </div>
+                
+                <div id="result-panel" class="result-panel hidden">
+                    <div id="result-message"></div>
+                    <button id="continue-game" class="btn primary">Continue</button>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <div class="game-controls">
+                <button id="new-game" class="btn">New Game</button>
+                <button id="hint" class="btn">Hint</button>
+                <button id="rules" class="btn">Rules</button>
+            </div>
+        </footer>
+    </div>
+
+    <div id="rules-modal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>How to Play Truth Table Checkers</h2>
+            <ul>
+                <li><strong>Goal:</strong> Capture all AI pieces or block all AI moves</li>
+                <li><strong>Movement:</strong> Solve a truth table problem to move your piece</li>
+                <li><strong>Captures:</strong> Move diagonally over AI pieces after solving correctly</li>
+                <li><strong>Piece Types:</strong>
+                    <ul>
+                        <li>🔵 AND pieces - solve AND (∧) truth tables</li>
+                        <li>🟢 OR pieces - solve OR (∨) truth tables</li>
+                        <li>🔴 NOT pieces - solve NOT (¬) truth tables</li>
+                        <li>🔶 IMPLIES pieces - solve implication (→) truth tables</li>
+                        <li>🔷 BICONDITIONAL pieces - solve if-and-only-if (↔) truth tables</li>
+                        <li>⚡ COMPLEX pieces - solve complex expressions with multiple operators</li>
+                        <li>👑 King pieces - solve advanced logical expressions</li>
+                    </ul>
+                </li>
+                <li><strong>Scoring:</strong> +2 for correct answers, +5 for captures, -1 for skips</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
