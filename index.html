@@ -55,6 +55,24 @@
         </footer>
     </div>
 
+    <!-- Welcome Modal -->
+    <div id="welcome-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>How to Play Truth Table Checkers</h2>
+            <ul>
+                <li><strong>Goal:</strong> Capture all AI pieces or block all AI moves</li>
+                <li><strong>Movement:</strong> Solve a truth table problem to move your piece</li>
+                <li><strong>Captures:</strong> Move diagonally over AI pieces after solving correctly</li>
+                <li><strong>Piece Types:</strong></li>
+            </ul>
+            <div style="text-align: center; margin-top: 20px;">
+                <button id="start-game" class="btn primary">Start Playing!</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rules Modal -->
     <div id="rules-modal" class="modal hidden">
         <div class="modal-content">
             <span class="close">&times;</span>
@@ -71,6 +89,7 @@
                         <li>🔶 IMPLIES pieces - solve implication (→) truth tables</li>
                         <li>🔷 BICONDITIONAL pieces - solve if-and-only-if (↔) truth tables</li>
                         <li>⚡ COMPLEX pieces - solve complex expressions with multiple operators</li>
+                        <li>⊤ TAUTOLOGY pieces - solve tautology expressions (always true)</li>
                         <li>👑 King pieces - solve advanced logical expressions</li>
                     </ul>
                 </li>

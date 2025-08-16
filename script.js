@@ -47,7 +47,7 @@ class TruthTableCheckers {
     }
 
     getRandomOperator() {
-        const operators = ['AND', 'OR', 'NOT', 'IMPLIES', 'BICONDITIONAL', 'COMPLEX'];
+        const operators = ['AND', 'OR', 'NOT', 'IMPLIES', 'BICONDITIONAL', 'COMPLEX', 'TAUTOLOGY'];
         return operators[Math.floor(Math.random() * operators.length)];
     }
 
@@ -88,7 +88,8 @@ class TruthTableCheckers {
             'NOT': '¬',
             'IMPLIES': '→',
             'BICONDITIONAL': '↔',
-            'COMPLEX': '⚡'
+            'COMPLEX': '⚡',
+            'TAUTOLOGY': '⊤'
         };
         return symbols[operator] || '?';
     }
@@ -173,6 +174,7 @@ class TruthTableCheckers {
     showChallenge(fromRow, fromCol, toRow, toCol) {
         const piece = this.board[fromRow][fromCol];
         this.currentComplexExpression = null; // Reset for new challenge
+        this.currentTautology = null; // Reset for new challenge
         this.currentChallenge = {
             fromRow, fromCol, toRow, toCol,
             operator: piece.operator,
@@ -237,8 +239,37 @@ class TruthTableCheckers {
             case 'IMPLIES': return !p || q; // P → Q is equivalent to ¬P ∨ Q
             case 'BICONDITIONAL': return p === q; // P ↔ Q is true when both have same value
             case 'COMPLEX': return this.evaluateComplexExpression(p, q);
+            case 'TAUTOLOGY': return this.evaluateTautology(p, q);
             default: return false;
         }
+    }
+
+    evaluateTautology(p, q) {
+        // Generate random tautology expressions that are always true
+        const tautologies = [
+            () => p || !p, // P ∨ ¬P (always true)
+            () => !p || p, // ¬P ∨ P (always true)
+            () => (p && q) || (!p || !q), // (P ∧ Q) ∨ (¬P ∨ ¬Q) (always true)
+            () => (p || q) || (!p && !q), // (P ∨ Q) ∨ (¬P ∧ ¬Q) (always true)
+            () => (!p || q) || (p && !q), // (¬P ∨ Q) ∨ (P ∧ ¬Q) (always true)
+        ];
+        
+        if (!this.currentTautology) {
+            this.currentTautology = Math.floor(Math.random() * tautologies.length);
+        }
+        
+        return tautologies[this.currentTautology]();
+    }
+
+    getTautologyString() {
+        const tautologies = [
+            'P ∨ ¬P',
+            '¬P ∨ P',
+            '(P ∧ Q) ∨ (¬P ∨ ¬Q)',
+            '(P ∨ Q) ∨ (¬P ∧ ¬Q)',
+            '(¬P ∨ Q) ∨ (P ∧ ¬Q)'
+        ];
+        return tautologies[this.currentTautology || 0];
     }
 
     evaluateImplicationVariant(operator, p, q, variant) {
@@ -291,6 +322,7 @@ class TruthTableCheckers {
             case 'IMPLIES': return this.currentChallengeData?.implicationVariant || 'P → Q';
             case 'BICONDITIONAL': return 'P ↔ Q';
             case 'COMPLEX': return this.getComplexExpressionString();
+            case 'TAUTOLOGY': return this.getTautologyString();
             default: return 'Result';
         }
     }
@@ -300,11 +332,17 @@ class TruthTableCheckers {
         const questionDiv = document.getElementById('challenge-question');
         const optionsDiv = document.getElementById('challenge-options');
 
+        console.log('Challenge data:', challenge);
+
+        // Show challenge container
+        container.classList.remove('hidden');
+
         // Build truth table HTML
         let tableHTML = `
             <div class="truth-table">
-                <p><strong>Complete the truth table for ${challenge.operator === 'COMPLEX' ? 'complex expression' : challenge.operator} operation:</strong></p>
+                <p><strong>Complete the truth table for ${challenge.operator === 'COMPLEX' ? 'complex expression' : challenge.operator === 'TAUTOLOGY' ? 'tautology' : challenge.operator} operation:</strong></p>
                 ${challenge.operator === 'COMPLEX' ? `<p><em>Expression: ${this.getComplexExpressionString()}</em></p>` : ''}
+                ${challenge.operator === 'TAUTOLOGY' ? `<p><em>Expression: ${this.getTautologyString()}</em></p>` : ''}
                 <table>
                     <thead>
                         <tr>
@@ -316,16 +354,34 @@ class TruthTableCheckers {
                     <tbody>
         `;
 
-        challenge.rows.forEach((row, index) => {
-            const output = index === challenge.question ? '?' : (row.output ? 'T' : 'F');
-            tableHTML += `
-                <tr>
-                    <td>${row.inputs[0] ? 'T' : 'F'}</td>
-                    <td>${row.inputs[1] ? 'T' : 'F'}</td>
-                    <td style="background-color: ${index === challenge.question ? '#ffeb3b' : 'transparent'}">${output}</td>
-                </tr>
-            `;
-        });
+        // Hard-coded truth table rows
+        const row0Output = this.evaluateImplicationVariant(challenge.operator, true, true, challenge.implicationVariant);
+        const row1Output = this.evaluateImplicationVariant(challenge.operator, true, false, challenge.implicationVariant);
+        const row2Output = this.evaluateImplicationVariant(challenge.operator, false, true, challenge.implicationVariant);
+        const row3Output = this.evaluateImplicationVariant(challenge.operator, false, false, challenge.implicationVariant);
+
+        tableHTML += `
+            <tr>
+                <td>T</td>
+                <td>T</td>
+                <td style="background-color: ${challenge.question === 0 ? '#ff8bda' : 'transparent'}; color: ${challenge.question === 0 ? 'white' : 'inherit'}; font-weight: ${challenge.question === 0 ? 'bold' : 'normal'}">${challenge.question === 0 ? '?' : (row0Output ? 'T' : 'F')}</td>
+            </tr>
+            <tr>
+                <td>T</td>
+                <td>F</td>
+                <td style="background-color: ${challenge.question === 1 ? '#ff8bda' : 'transparent'}; color: ${challenge.question === 1 ? 'white' : 'inherit'}; font-weight: ${challenge.question === 1 ? 'bold' : 'normal'}">${challenge.question === 1 ? '?' : (row1Output ? 'T' : 'F')}</td>
+            </tr>
+            <tr>
+                <td>F</td>
+                <td>T</td>
+                <td style="background-color: ${challenge.question === 2 ? '#ff8bda' : 'transparent'}; color: ${challenge.question === 2 ? 'white' : 'inherit'}; font-weight: ${challenge.question === 2 ? 'bold' : 'normal'}">${challenge.question === 2 ? '?' : (row2Output ? 'T' : 'F')}</td>
+            </tr>
+            <tr>
+                <td>F</td>
+                <td>F</td>
+                <td style="background-color: ${challenge.question === 3 ? '#ff8bda' : 'transparent'}; color: ${challenge.question === 3 ? 'white' : 'inherit'}; font-weight: ${challenge.question === 3 ? 'bold' : 'normal'}">${challenge.question === 3 ? '?' : (row3Output ? 'T' : 'F')}</td>
+            </tr>
+        `;
 
         tableHTML += '</tbody></table></div>';
         questionDiv.innerHTML = tableHTML;
@@ -350,7 +406,7 @@ class TruthTableCheckers {
     }
 
     startTimer() {
-        this.timeLeft = 30;
+        this.timeLeft = 120;
         this.updateTimer();
         
         this.timer = setInterval(() => {
@@ -378,7 +434,7 @@ class TruthTableCheckers {
         // Use stored challenge data if challenge parameter is incomplete
         const challengeData = challenge || this.currentChallengeData;
         if (!challengeData || !challengeData.rows) {
-            return "Unable to provide explanation - challenge data missing.";
+            return "Missing data";
         }
         
         const { operator, rows, question } = challengeData;
@@ -387,88 +443,36 @@ class TruthTableCheckers {
         const q = questionRow.inputs[1];
         const result = questionRow.output;
         
-        let explanation = "";
+        const pVal = p ? 'T' : 'F';
+        const qVal = q ? 'T' : 'F';
+        const resultVal = result ? 'T' : 'F';
         
         switch (operator) {
             case 'AND':
-                explanation = `<strong>Conjunction (AND) Rule:</strong><br>`;
-                explanation += `P ∧ Q is true only when both P and Q are true.<br>`;
-                explanation += `Since P = ${p ? 'True' : 'False'} and Q = ${q ? 'True' : 'False'}, `;
-                if (p && q) {
-                    explanation += `both are true, so P ∧ Q = True.`;
-                } else {
-                    explanation += `at least one is false, so P ∧ Q = False.`;
-                }
-                break;
+                return `<strong>AND:</strong> Both must be true<br>P=${pVal}, Q=${qVal} → ${resultVal}`;
                 
             case 'OR':
-                explanation = `<strong>Disjunction (OR) Rule:</strong><br>`;
-                explanation += `P ∨ Q is true when at least one of P or Q is true.<br>`;
-                explanation += `Since P = ${p ? 'True' : 'False'} and Q = ${q ? 'True' : 'False'}, `;
-                if (p || q) {
-                    explanation += `at least one is true, so P ∨ Q = True.`;
-                } else {
-                    explanation += `both are false, so P ∨ Q = False.`;
-                }
-                break;
+                return `<strong>OR:</strong> At least one must be true<br>P=${pVal}, Q=${qVal} → ${resultVal}`;
                 
             case 'NOT':
-                explanation = `<strong>Negation (NOT) Rule:</strong><br>`;
-                explanation += `¬P is true when P is false, and false when P is true.<br>`;
-                explanation += `Since P = ${p ? 'True' : 'False'}, `;
-                explanation += `¬P = ${!p ? 'True' : 'False'}.`;
-                break;
+                return `<strong>NOT:</strong> Flips the value<br>P=${pVal} → ¬P=${resultVal}`;
                 
             case 'IMPLIES':
                 const variant = challengeData.implicationVariant || 'P→Q';
-                explanation = `<strong>Implication (→) Rule:</strong><br>`;
-                explanation += `${variant} is false only when the antecedent is true and the consequent is false.<br>`;
-                explanation += `Since P = ${p ? 'True' : 'False'} and Q = ${q ? 'True' : 'False'}:<br>`;
-                
-                switch (variant) {
-                    case 'P→Q':
-                        explanation += `P → Q is ${result ? 'True' : 'False'} because `;
-                        explanation += (p && !q) ? 'P is true and Q is false.' : 'the implication holds.';
-                        break;
-                    case 'P→¬Q':
-                        explanation += `P → ¬Q is ${result ? 'True' : 'False'} because `;
-                        explanation += (p && q) ? 'P is true and ¬Q is false (Q is true).' : 'the implication holds.';
-                        break;
-                    case '¬P→Q':
-                        explanation += `¬P → Q is ${result ? 'True' : 'False'} because `;
-                        explanation += (!p && !q) ? '¬P is true (P is false) and Q is false.' : 'the implication holds.';
-                        break;
-                    case '¬P→¬Q':
-                        explanation += `¬P → ¬Q is ${result ? 'True' : 'False'} because `;
-                        explanation += (!p && q) ? '¬P is true (P is false) and ¬Q is false (Q is true).' : 'the implication holds.';
-                        break;
-                }
-                break;
+                return `<strong>${variant}:</strong> False only when premise=T, conclusion=F<br>P=${pVal}, Q=${qVal} → ${resultVal}`;
                 
             case 'BICONDITIONAL':
-                explanation = `<strong>Biconditional (If and Only If ↔) Rule:</strong><br>`;
-                explanation += `P ↔ Q is true when P and Q have the same truth value.<br>`;
-                explanation += `Since P = ${p ? 'True' : 'False'} and Q = ${q ? 'True' : 'False'}, `;
-                if (p === q) {
-                    explanation += `both have the same value, so P ↔ Q = True.`;
-                } else {
-                    explanation += `they have different values, so P ↔ Q = False.`;
-                }
-                break;
+                return `<strong>↔:</strong> Same values = True<br>P=${pVal}, Q=${qVal} → ${resultVal}`;
                 
             case 'COMPLEX':
-                explanation = `<strong>Complex Expression Rule:</strong><br>`;
-                explanation += `Expression: ${this.getComplexExpressionString()}<br>`;
-                explanation += `For P = ${p ? 'True' : 'False'} and Q = ${q ? 'True' : 'False'}:<br>`;
-                explanation += `Evaluate step by step following operator precedence and parentheses.<br>`;
-                explanation += `Result: ${result ? 'True' : 'False'}`;
-                break;
+                return `<strong>Complex:</strong> Follow operator order<br>P=${pVal}, Q=${qVal} → ${resultVal}`;
+                
+            case 'TAUTOLOGY':
+                return `<strong>Tautology:</strong> Always true<br>Any values → T`;
                 
             default:
-                explanation = `The correct answer is ${result ? 'True' : 'False'}.`;
+                return `Answer: ${resultVal}`;
         }
-        
-        return explanation;
     }
 
     submitAnswer() {
@@ -656,10 +660,170 @@ class TruthTableCheckers {
             if (e.target === modal) modal.classList.add('hidden');
         });
         
-        // Hint button (placeholder)
+        // Hint button
         document.getElementById('hint').addEventListener('click', () => {
-            alert('Hint: Remember the basic truth table rules for each operator!');
+            this.showHint();
         });
+
+        // Welcome modal functionality
+        this.setupWelcomeModal();
+    }
+
+    setupWelcomeModal() {
+        const welcomeModal = document.getElementById('welcome-modal');
+        const startGameBtn = document.getElementById('start-game');
+        const welcomeCloseBtn = welcomeModal.querySelector('.close');
+
+        // Close welcome modal when start game is clicked
+        startGameBtn.addEventListener('click', () => {
+            welcomeModal.classList.add('hidden');
+        });
+
+        // Close welcome modal with X button
+        welcomeCloseBtn.addEventListener('click', () => {
+            welcomeModal.classList.add('hidden');
+        });
+
+        // Close welcome modal when clicking outside
+        welcomeModal.addEventListener('click', (e) => {
+            if (e.target === welcomeModal) {
+                welcomeModal.classList.add('hidden');
+            }
+        });
+    }
+
+    showHint() {
+        if (!this.currentChallengeData) {
+            alert('Start a challenge first to get hints!');
+            return;
+        }
+
+        const { operator, implicationVariant } = this.currentChallengeData;
+        let hint = this.getHintForOperator(operator, implicationVariant);
+        
+        // Create hint modal
+        const hintModal = document.createElement('div');
+        hintModal.className = 'modal';
+        hintModal.innerHTML = `
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h2>💡 Hint</h2>
+                <div class="hint-content">
+                    ${hint}
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(hintModal);
+        
+        // Add close functionality
+        const closeBtn = hintModal.querySelector('.close');
+        closeBtn.addEventListener('click', () => {
+            document.body.removeChild(hintModal);
+        });
+        
+        hintModal.addEventListener('click', (e) => {
+            if (e.target === hintModal) {
+                document.body.removeChild(hintModal);
+            }
+        });
+    }
+
+    getHintForOperator(operator, implicationVariant) {
+        switch (operator) {
+            case 'AND':
+                return `
+                    <p><strong>AND (∧) Operator:</strong></p>
+                    <p>• Returns <strong>true</strong> only when BOTH inputs are true</p>
+                    <p>• Think: "P AND Q" - both conditions must be met</p>
+                    <p>• Example: "It's sunny AND warm" is only true if both are true</p>
+                `;
+            
+            case 'OR':
+                return `
+                    <p><strong>OR (∨) Operator:</strong></p>
+                    <p>• Returns <strong>true</strong> when AT LEAST ONE input is true</p>
+                    <p>• Think: "P OR Q" - either condition (or both) can be met</p>
+                    <p>• Example: "Bring an umbrella OR sunglasses" - you need at least one</p>
+                `;
+            
+            case 'NOT':
+                return `
+                    <p><strong>NOT (¬) Operator:</strong></p>
+                    <p>• Returns the <strong>opposite</strong> of the input</p>
+                    <p>• If P is true, ¬P is false</p>
+                    <p>• If P is false, ¬P is true</p>
+                    <p>• Think: "NOT raining" means it's not raining</p>
+                `;
+            
+            case 'IMPLIES':
+                if (implicationVariant) {
+                    return `
+                        <p><strong>Implication (${implicationVariant}):</strong></p>
+                        <p>• An implication is <strong>false</strong> only when the premise is true but the conclusion is false</p>
+                        <p>• For ${implicationVariant}:</p>
+                        ${this.getImplicationVariantHint(implicationVariant)}
+                        <p>• Remember: "If false, then anything" is always true!</p>
+                    `;
+                } else {
+                    return `
+                        <p><strong>IMPLIES (→) Operator:</strong></p>
+                        <p>• P→Q is <strong>false</strong> only when P is true and Q is false</p>
+                        <p>• Think: "If it rains, then I'll bring an umbrella"</p>
+                        <p>• Only false if it rains but I don't bring an umbrella</p>
+                    `;
+                }
+            
+            case 'BICONDITIONAL':
+                return `
+                    <p><strong>BICONDITIONAL (↔) Operator:</strong></p>
+                    <p>• Returns <strong>true</strong> when both inputs have the SAME truth value</p>
+                    <p>• P↔Q means "P if and only if Q"</p>
+                    <p>• True when: (P=true, Q=true) or (P=false, Q=false)</p>
+                    <p>• Think: "The light is on if and only if the switch is up"</p>
+                `;
+            
+            case 'COMPLEX':
+                return `
+                    <p><strong>COMPLEX Expression:</strong></p>
+                    <p>• Break down the expression step by step</p>
+                    <p>• Work from inside parentheses outward</p>
+                    <p>• Apply operator precedence: NOT, then AND, then OR</p>
+                    <p>• Substitute the truth values and evaluate each part</p>
+                `;
+            
+            case 'TAUTOLOGY':
+                return `
+                    <p><strong>TAUTOLOGY (⊤):</strong></p>
+                    <p>• A tautology is <strong>ALWAYS true</strong>, regardless of input values</p>
+                    <p>• Examples: P ∨ ¬P (something is either true or not true)</p>
+                    <p>• No matter what P and Q are, the result is always true</p>
+                    <p>• Think: "It's either raining or not raining" - always true!</p>
+                `;
+            
+            default:
+                return `
+                    <p><strong>General Tip:</strong></p>
+                    <p>• Read the expression carefully</p>
+                    <p>• Substitute the given truth values</p>
+                    <p>• Apply the operator rules step by step</p>
+                `;
+        }
+    }
+
+    getImplicationVariantHint(variant) {
+        switch (variant) {
+            case 'P→Q':
+                return '<p>• False only when P=true and Q=false</p>';
+            case 'P→¬Q':
+                return '<p>• False only when P=true and Q=true (since ¬Q would be false)</p>';
+            case '¬P→Q':
+                return '<p>• False only when P=false (so ¬P=true) and Q=false</p>';
+            case '¬P→¬Q':
+                return '<p>• False only when P=false (so ¬P=true) and Q=true (so ¬Q=false)</p>';
+            default:
+                return '<p>• Apply the implication rule to the specific variant</p>';
+        }
     }
 }
 
