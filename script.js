@@ -89,7 +89,7 @@ class TruthTableCheckers {
             'IMPLIES': '→',
             'BICONDITIONAL': '↔',
             'COMPLEX': '⚡',
-            'TAUTOLOGY': '⊤'
+            'TAUTOLOGY': 'L'
         };
         return symbols[operator] || '?';
     }
@@ -202,6 +202,11 @@ class TruthTableCheckers {
             implicationVariant = variants[Math.floor(Math.random() * variants.length)];
         }
 
+        // For TAUTOLOGY, select a specific expression and store it
+        if (operator === 'TAUTOLOGY') {
+            this.currentTautology = Math.floor(Math.random() * 8); // 8 different expressions
+        }
+
         const challenge = {
             operator,
             variables,
@@ -245,31 +250,36 @@ class TruthTableCheckers {
     }
 
     evaluateTautology(p, q) {
-        // Generate random tautology expressions that are always true
-        const tautologies = [
-            () => p || !p, // P ∨ ¬P (always true)
-            () => !p || p, // ¬P ∨ P (always true)
-            () => (p && q) || (!p || !q), // (P ∧ Q) ∨ (¬P ∨ ¬Q) (always true)
-            () => (p || q) || (!p && !q), // (P ∨ Q) ∨ (¬P ∧ ¬Q) (always true)
-            () => (!p || q) || (p && !q), // (¬P ∨ Q) ∨ (P ∧ ¬Q) (always true)
+        // Mix of tautologies (always true) and contradictions (always false)
+        const expressions = [
+            () => p || !p, // P ∨ ¬P (tautology)
+            () => !p || p, // ¬P ∨ P (tautology)
+            () => (p && q) || (!p || !q), // (P ∧ Q) ∨ (¬P ∨ ¬Q) (tautology)
+            () => p && !p, // P ∧ ¬P (contradiction)
+            () => !p && p, // ¬P ∧ P (contradiction)
+            () => (p || q) && (!p && !q), // (P ∨ Q) ∧ (¬P ∧ ¬Q) (contradiction)
+            () => (p && !q) && (!p || q), // (P ∧ ¬Q) ∧ (¬P ∨ Q) (contradiction)
+            () => (p || !p) && (q || !q) // (P ∨ ¬P) ∧ (Q ∨ ¬Q) (tautology)
         ];
         
-        if (!this.currentTautology) {
-            this.currentTautology = Math.floor(Math.random() * tautologies.length);
-        }
-        
-        return tautologies[this.currentTautology]();
+        // Use the pre-selected tautology index
+        return expressions[this.currentTautology]();
     }
 
     getTautologyString() {
-        const tautologies = [
+        const expressions = [
             'P ∨ ¬P',
             '¬P ∨ P',
             '(P ∧ Q) ∨ (¬P ∨ ¬Q)',
-            '(P ∨ Q) ∨ (¬P ∧ ¬Q)',
-            '(¬P ∨ Q) ∨ (P ∧ ¬Q)'
+            'P ∧ ¬P',
+            '¬P ∧ P',
+            '(P ∨ Q) ∧ (¬P ∧ ¬Q)',
+            '(P ∧ ¬Q) ∧ (¬P ∨ Q)',
+            '(P ∨ ¬P) ∧ (Q ∨ ¬Q)'
         ];
-        return tautologies[this.currentTautology || 0];
+        
+        // Use the pre-selected tautology index
+        return expressions[this.currentTautology];
     }
 
     evaluateImplicationVariant(operator, p, q, variant) {
@@ -340,7 +350,7 @@ class TruthTableCheckers {
         // Build truth table HTML
         let tableHTML = `
             <div class="truth-table">
-                <p><strong>Complete the truth table for ${challenge.operator === 'COMPLEX' ? 'complex expression' : challenge.operator === 'TAUTOLOGY' ? 'tautology' : challenge.operator} operation:</strong></p>
+                <p><strong>Complete the truth table for ${challenge.operator === 'COMPLEX' ? 'complex expression' : challenge.operator === 'TAUTOLOGY' ? 'logical expression' : challenge.operator} operation:</strong></p>
                 ${challenge.operator === 'COMPLEX' ? `<p><em>Expression: ${this.getComplexExpressionString()}</em></p>` : ''}
                 ${challenge.operator === 'TAUTOLOGY' ? `<p><em>Expression: ${this.getTautologyString()}</em></p>` : ''}
                 <table>
@@ -468,7 +478,8 @@ class TruthTableCheckers {
                 return `<strong>Complex:</strong> Follow operator order<br>P=${pVal}, Q=${qVal} → ${resultVal}`;
                 
             case 'TAUTOLOGY':
-                return `<strong>Tautology:</strong> Always true<br>Any values → T`;
+                const isTautology = this.evaluateTautology(pVal, qVal);
+                return `<strong>Logical:</strong> ${isTautology ? 'Tautology (always true)' : 'Contradiction (always false)'}<br>P=${pVal}, Q=${qVal} → ${resultVal}`;
                 
             default:
                 return `Answer: ${resultVal}`;
@@ -640,7 +651,65 @@ class TruthTableCheckers {
 
     endGame(winner) {
         this.gameState = 'ended';
-        alert(`Game Over! ${winner === 'player' ? 'You win!' : 'AI wins!'}`);
+        this.showGameEndModal(winner);
+    }
+
+    showGameEndModal(winner) {
+        const isPlayerWin = winner === 'player';
+        const title = isPlayerWin ? '🎉 Congratulations!' : '💭 Game Over';
+        const message = isPlayerWin ? 'You won! Great job solving those truth tables!' : 'AI wins this time. Try again!';
+        const emoji = isPlayerWin ? '🏆' : '🤖';
+        
+        // Create modal HTML
+        const modalHTML = `
+            <div id="game-end-modal" class="modal">
+                <div class="modal-content game-end-content">
+                    <div class="game-end-header">
+                        <div class="game-end-emoji">${emoji}</div>
+                        <h2>${title}</h2>
+                    </div>
+                    <p class="game-end-message">${message}</p>
+                    <div class="game-end-stats">
+                        <div class="stat-item">
+                            <span class="stat-label">Your Score:</span>
+                            <span class="stat-value">${this.playerScore}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">AI Score:</span>
+                            <span class="stat-value">${this.aiScore}</span>
+                        </div>
+                    </div>
+                    <div class="game-end-buttons">
+                        <button id="play-again" class="btn primary">Play Again</button>
+                        <button id="close-game-end" class="btn secondary">Close</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Add modal to page
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        
+        // Setup event listeners
+        const modal = document.getElementById('game-end-modal');
+        const playAgainBtn = document.getElementById('play-again');
+        const closeGameEndBtn = document.getElementById('close-game-end');
+        
+        // Close modal handlers
+        const closeModal = () => {
+            modal.remove();
+        };
+        
+        closeGameEndBtn.addEventListener('click', closeModal);
+        playAgainBtn.addEventListener('click', () => {
+            closeModal();
+            this.newGame();
+        });
+        
+        // Close on outside click
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeModal();
+        });
     }
 
     setupEventListeners() {
@@ -652,7 +721,7 @@ class TruthTableCheckers {
         // Rules modal
         const rulesBtn = document.getElementById('rules');
         const modal = document.getElementById('rules-modal');
-        const closeBtn = document.querySelector('.close');
+        const closeBtn = modal.querySelector('.close');
         
         rulesBtn.addEventListener('click', () => modal.classList.remove('hidden'));
         closeBtn.addEventListener('click', () => modal.classList.add('hidden'));
@@ -794,11 +863,11 @@ class TruthTableCheckers {
             
             case 'TAUTOLOGY':
                 return `
-                    <p><strong>TAUTOLOGY (⊤):</strong></p>
-                    <p>• A tautology is <strong>ALWAYS true</strong>, regardless of input values</p>
-                    <p>• Examples: P ∨ ¬P (something is either true or not true)</p>
-                    <p>• No matter what P and Q are, the result is always true</p>
-                    <p>• Think: "It's either raining or not raining" - always true!</p>
+                    <p><strong>LOGICAL EXPRESSIONS (⊤/⊥):</strong></p>
+                    <p>• <strong>Tautologies</strong> are ALWAYS true (e.g., P ∨ ¬P)</p>
+                    <p>• <strong>Contradictions</strong> are ALWAYS false (e.g., P ∧ ¬P)</p>
+                    <p>• Look at the expression carefully to determine which type it is</p>
+                    <p>• Think: "Is this logically possible to be false/true?"</p>
                 `;
             
             default:
